@@ -83,9 +83,6 @@
               'images/kintone-deal-4.jpg', // 一覧画面での直接編集を止める
               'images/kintone-deal-5.jpg', // 詳細画面の期限の警告
             ],
-            links: [
-              { label: 'GitHub（コード・設定手順）', url: 'https://github.com/emi-works/kintone-demo/tree/main/01-deal-management' },
-            ],
           }),
           kintoneDemo({
             title: '見積→請求 連動アプリ（kintone）',
@@ -112,9 +109,6 @@
               'images/kintone-quote-3.jpg', // 見積書・請求書の帳票
               'images/kintone-quote-4.jpg', // 請求一覧の期限超過
             ],
-            links: [
-              { label: 'GitHub（コード・設定手順）', url: 'https://github.com/emi-works/kintone-demo/tree/main/02-quote-invoice' },
-            ],
           }),
           kintoneDemo({
             title: '問い合わせの自動登録・通知（kintone）',
@@ -139,9 +133,6 @@
               'images/kintone-inquiry-2.jpg', // フォームから kintone へ登録
               'images/kintone-inquiry-3.jpg', // 問い合わせ一覧（期限の色分け・件数）
               'images/kintone-inquiry-4.jpg', // 担当者への通知メール
-            ],
-            links: [
-              { label: 'GitHub（コード・設定手順）', url: 'https://github.com/emi-works/kintone-demo/tree/main/03-inquiry-automation' },
             ],
           }),
         ],

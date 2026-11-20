@@ -30,7 +30,7 @@
       old.style.opacity = 0;
       setTimeout(() => old.remove(), 600);
     }
-    if (name === 'TOP') return; // TOP は名前が主役なので出さない
+    if (name === 'TOP') return; // TOP は中央の大きな文字が主役なので出さない
 
     const span = document.createElement('span');
     span.textContent = name;
@@ -49,14 +49,13 @@
 
   // ---- 図形 ----
 
-  // 最初の位置・大きさ（画面に対する割合）。順番は TOP, PROFILE, WORKS, STRENGTH, SKILL, CONTACT
+  // 最初の位置・大きさ（画面に対する割合）。順番は TOP, PROFILE, WORKS, STRENGTH, SKILL
   const SHAPE_SETS = [
     [{ t: 'circle', x: 0.84, y: 0.24, s: 0.13 }, { t: 'tri', x: 0.12, y: 0.62, s: 0.06, accent: true }, { t: 'plus', x: 0.9, y: 0.62, s: 0.014 }, { t: 'square', x: 0.3, y: 0.18, s: 0.05 }],
     [{ t: 'circle', x: 0.2, y: 0.32, s: 0.16 }, { t: 'square', x: 0.4, y: 0.2, s: 0.045, accent: true }, { t: 'plus', x: 0.1, y: 0.12, s: 0.014 }],
     [{ t: 'tri', x: 0.9, y: 0.18, s: 0.08 }, { t: 'circle', x: 0.75, y: 0.3, s: 0.025, accent: true }, { t: 'plus', x: 0.95, y: 0.5, s: 0.014 }],
     [{ t: 'square', x: 0.84, y: 0.3, s: 0.09 }, { t: 'circle', x: 0.6, y: 0.2, s: 0.035, accent: true }, { t: 'tri', x: 0.75, y: 0.55, s: 0.04 }],
     [{ t: 'circle', x: 0.88, y: 0.4, s: 0.12 }, { t: 'tri', x: 0.7, y: 0.2, s: 0.04, accent: true }, { t: 'plus', x: 0.94, y: 0.15, s: 0.014 }],
-    [{ t: 'tri', x: 0.78, y: 0.35, s: 0.13 }, { t: 'circle', x: 0.6, y: 0.18, s: 0.04, accent: true }, { t: 'square', x: 0.92, y: 0.6, s: 0.04 }],
   ];
   const SPEED_MIN = 30; // px/秒
   const SPEED_MAX = 50;

@@ -151,106 +151,10 @@
     <p class="ai-note reveal">${escapeHtml(SITE.aiNote)}</p>`
   );
 
-  // CONTACT
-  const formConfig = SITE.form;
-  const typeOptionsHtml = formConfig.types.map((type) => `<option>${escapeHtml(type)}</option>`).join('');
-  // 項目名 + 必須マーク + 入力欄 + エラー表示
-  const field = (label, controlHtml) => `
-      <label class="field">
-        <span class="field-label">${label}<em class="required">必須</em></span>
-        ${controlHtml}
-        <span class="field-error" aria-live="polite"></span>
-      </label>`;
-
-  addSection(
-    'CONTACT',
-    `
-    <form id="contact-form" method="post" target="hidden-frame" class="reveal" novalidate>
-      ${field('名前', `<input name="${escapeHtml(formConfig.entries.name)}" required>`)}
-      ${field(
-        'メールアドレス',
-        `<input type="email" name="${escapeHtml(formConfig.entries.email)}" required pattern="[^@\\s]+@[^@\\s]+\\.[^@\\s]+" placeholder="name@example.com">`
-      )}
-      ${field(
-        '依頼の種類',
-        `<select name="${escapeHtml(formConfig.entries.type)}" required>
-          <option value="" disabled selected>選択してください</option>
-          ${typeOptionsHtml}
-        </select>`
-      )}
-      ${field('内容', `<textarea name="${escapeHtml(formConfig.entries.message)}" required></textarea>`)}
-      <button class="submit-button" type="submit">送信する</button>
-    </form>
-    <iframe name="hidden-frame" hidden></iframe>
-    <p class="small-text reveal" id="form-status" role="status">${SITE.privacy.map(escapeHtml).join('<br>')}</p>
-    <p class="small-text reveal">© 2026 ${escapeHtml(SITE.name)}</p>`
-  );
-
-  // ---- contact form ----
-
-  const form = $('#contact-form');
-  const formFields = [...form.querySelectorAll('input, select, textarea')];
-  const submitButton = form.querySelector('.submit-button');
-  const hiddenFrame = $('iframe[name="hidden-frame"]');
-  const formStatus = $('#form-status');
-
-  const ERROR_REQUIRED = 'この質問は必須です';
-  const ERROR_EMAIL = 'メールアドレスの形式で入力してください（例：name@example.com）';
-
-  // ブラウザ標準の吹き出しは使わず（novalidate）、各欄の下にエラーを出す
-  const validateField = (el) => {
-    let message = '';
-    if (!el.value.trim()) message = ERROR_REQUIRED;
-    else if (!el.checkValidity()) message = ERROR_EMAIL;
-
-    el.closest('.field').querySelector('.field-error').textContent = message;
-    el.setAttribute('aria-invalid', String(Boolean(message)));
-    return !message;
-  };
-
-  // 一度エラーになった欄は、入力し直したらその場で再チェック
-  const revalidate = (e) => {
-    if (e.target.getAttribute('aria-invalid') === 'true') validateField(e.target);
-  };
-  form.addEventListener('input', revalidate);
-  form.addEventListener('change', revalidate);
-
-  let isSending = false;
-
-  form.action = formConfig.action;
-  form.addEventListener('submit', (e) => {
-    const invalidFields = formFields.filter((el) => !validateField(el));
-    if (invalidFields.length) {
-      e.preventDefault();
-      invalidFields[0].focus();
-      return;
-    }
-    if (!formConfig.action) {
-      e.preventDefault();
-      formStatus.textContent = '【追記】送信先（GoogleフォームのURL）が未設定です。';
-      return;
-    }
-    isSending = true;
-    submitButton.disabled = true;
-  });
-
-  // Googleフォームの応答が hidden-frame に返ってきたら完了とする（成否までは判別できない）
-  hiddenFrame.addEventListener('load', () => {
-    if (!isSending) return;
-    isSending = false;
-    submitButton.disabled = false;
-    form.reset();
-    openThanks();
-    track('contact_submit');
-  });
-
   // ---- section navigation ----
 
   const navList = $('#nav ul');
   const navMarker = $('.nav-marker');
-  const contactCta = $('#contact-cta');
-  const contactIndex = sections.findIndex((section) => section.name === 'CONTACT');
-  if (contactCta) contactCta.addEventListener('click', () => goTo(contactIndex));
   const sectionLabel = $('#section-label');
   const modal = $('#modal');
 
@@ -321,9 +225,6 @@
 
     // TOP ではラベルを出さない
     updateSectionLabel(index ? sections[index].name : '', direction);
-
-    // CONTACT 表示中はお問い合わせボタンを隠す
-    if (contactCta) contactCta.classList.toggle('is-hidden', index === contactIndex);
 
     // 背景（background.js）に切り替えを知らせる
     dispatchEvent(new CustomEvent('sectionchange', { detail: { index, name: sections[index].name, direction } }));
@@ -539,20 +440,6 @@
     if (lastFocused) lastFocused.focus();
   };
 
-  // 送信完了のポップアップ
-  function openThanks() {
-    activeCard = null;
-    lastFocused = submitButton;
-    modal.innerHTML = `
-      <div class="modal-box modal-thanks" role="dialog" aria-modal="true" aria-labelledby="thanks-title">
-        <h3 id="thanks-title">${escapeHtml(formConfig.thanks.title)}</h3>
-        <p>${escapeHtml(formConfig.thanks.message)}</p>
-        <button class="submit-button thanks-close">閉じる</button>
-      </div>`;
-    modal.hidden = false;
-    modal.querySelector('.thanks-close').focus();
-  }
-
   // 端まで行ったらループ
   const showNextImage = (step) => {
     const count = activeCard.images.length;
@@ -569,7 +456,7 @@
     const target = e.target;
 
     // 背景 or ×
-    if (target === modal || target.closest('.modal-close, .thanks-close')) return closeModal();
+    if (target === modal || target.closest('.modal-close')) return closeModal();
 
     const arrow = target.closest('.slider-arrow');
     if (arrow) return showNextImage(arrow.classList.contains('next') ? 1 : -1);
@@ -592,9 +479,6 @@
       }
       return;
     }
-
-    // フォーム入力中は無視
-    if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
 
     if (e.key === 'ArrowDown' || e.key === 'PageDown') {
       e.preventDefault();

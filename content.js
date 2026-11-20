@@ -39,8 +39,8 @@
 
   window.SITE = {
     // TOP
-    name: 'EMI HASEGAWA',
-    catch: ['「やりたい」を形にする', 'デジタルクリエイター'], // 幅1000px以下ではここで改行
+    name: 'AUTOMATION ENGINEER', // トップ中央の大きな文字
+    catch: ['「やりたい」を形にする', '業務効率化エンジニア'], // 幅1000px以下ではここで改行
     lead: '業務効率化（kintone・Excel VBA・Power Automate）とWeb制作を中心に、アプリ制作や動画編集まで、ITの力であなたのアイデアを具現化します。',
 
     // PROFILE
@@ -358,29 +358,5 @@
       },
     ],
     aiNote: '開発には生成AIも活用し、効率よく進めています。出力内容の確認と動作検証は自分で行います。',
-
-    // CONTACT
-    // 迷惑メール対策（ハニーポット等）は未導入。届くようになったら検討
-    form: {
-      action: 'https://docs.google.com/forms/d/e/1FAIpQLSdCCNX03l9aJMuiQIJj82sk-LhdS3MJzxuRopSt2XrEL5wtwg/formResponse',
-      entries: {
-        name: 'entry.1205416184',
-        email: 'entry.196144356',
-        type: 'entry.1328257245',
-        message: 'entry.959593394',
-      },
-      // Googleフォームの選択肢と1文字でも違うと送信できない
-      types: ['業務効率化', 'Web制作', 'アプリ制作', 'その他'],
-      // 送信後のポップアップ
-      thanks: {
-        title: 'お問い合わせありがとうございます',
-        message: '内容を確認のうえ、ご入力いただいたメールアドレス宛にご連絡いたします。',
-      },
-    },
-    privacy: [
-      'ご入力いただいた個人情報は、お問い合わせへの対応およびご連絡の目的にのみ利用いたします。',
-      '法令に基づく場合を除き、第三者に開示・提供することはありません。',
-      '本サイトではアクセス解析のためGoogleアナリティクスを使用しています。',
-    ],
   };
 })();

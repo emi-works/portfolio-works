@@ -1,0 +1,1076 @@
+:root {
+  --color-bg: #F6F4F0;
+  --color-accent: #FF6B00;
+  --color-accent-text: #C24E00; /* 文字用（背景とのコントラスト確保） */
+  --color-text: #1A202C;
+  --color-subtext: #4A5568;
+  --color-line: #E0E0E0;
+  --color-placeholder: #E6E6E6;
+  --color-border: #CFCFCF;
+  --color-muted: #9AA0A6; /* 入力欄の薄い文字 */
+  --color-error: #C5221F;
+
+  --font-serif: 'DM Serif Display', serif;
+  --font-sans: 'Noto Sans JP', 'Noto Sans', sans-serif;
+
+  --ease-section: cubic-bezier(.7, 0, .2, 1);
+
+  /* 全ページ共通の余白 */
+  --pad-top: 14vh;
+  --pad-right: 12vw;
+  --pad-bottom: 12vh;
+  --pad-left: 9vw;
+
+  /* 本文などを揃える基準線（画面左からの位置） */
+  --axis: 50vw;
+}
+
+/* ---- base ---- */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+}
+
+/* ページ自体はスクロールさせず、セクション単位で切り替える */
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font: 400 16px/1.9 var(--font-sans);
+  font-feature-settings: "palt";
+  letter-spacing: .04em;
+  word-break: auto-phrase; /* 日本語を文節で改行（継承で全要素に効く） */
+}
+
+/* 背景レイヤーを見せるため、色は html 側だけに付ける */
+body {
+  background: transparent;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+a {
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 3px;
+}
+
+/* ---- sections ---- */
+
+#app {
+  position: fixed;
+  inset: 0;
+}
+
+/* 全セクションを重ねておき、表示中のものだけ見せる */
+.section {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(10%);
+  pointer-events: none;
+  transition: transform 1s var(--ease-section), opacity .9s;
+}
+
+.section.is-above {
+  transform: translateY(-10%);
+}
+
+.section.is-current {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.section-scroll {
+  height: 100%;
+  overflow-y: auto;
+  padding: var(--pad-top) var(--pad-right) var(--pad-bottom) var(--pad-left);
+  display: flex;
+  flex-direction: column;
+  scrollbar-width: none;
+  overscroll-behavior: contain;
+}
+
+.section-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+/* 短いときは上下中央 */
+.section-inner {
+  margin: 0;
+}
+
+/* --i は script.js で付与 */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity .8s, transform .8s;
+}
+
+.is-current .reveal {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 90ms + 350ms);
+}
+
+/* ---- background ---- */
+
+.bg-layer {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* 紙の質感（ごく薄い粒子） */
+#bg-grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .1  0 0 0 0 .12  0 0 0 0 .17  0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: .14;
+}
+
+/* セクション名の大きなアウトライン文字 */
+#bg-word,
+#bg-shapes {
+  z-index: -2;
+}
+
+#bg-word span {
+  position: absolute;
+  right: 2vw;
+  bottom: -6vh;
+  font: 400 clamp(120px, 24vw, 420px)/1 var(--font-serif);
+  letter-spacing: 0;
+  white-space: nowrap;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(26, 32, 44, .12);
+  transition: transform 1.2s var(--ease-section), opacity 1s;
+}
+
+#bg-word span.is-leaving {
+  transition: transform .6s var(--ease-section), opacity .4s;
+}
+
+/* ベースライン計測用の目印（background.js） */
+.baseline-mark {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+}
+
+/* 漂う図形 */
+#bg-shapes svg {
+  width: 100%;
+  height: 100%;
+}
+
+#bg-shapes path,
+#bg-shapes circle {
+  fill: none;
+  stroke: rgba(26, 32, 44, .18);
+  stroke-width: 1;
+}
+
+#bg-shapes .accent {
+  stroke: rgba(255, 107, 0, .5);
+}
+
+/* ---- section label / nav ---- */
+
+#section-label {
+  position: fixed;
+  top: max(28px, env(safe-area-inset-top));
+  left: var(--pad-left);
+  width: 60vw;
+  height: 1.7em;
+  overflow: hidden;
+  z-index: 5;
+  font: 400 28px/1.7 var(--font-serif);
+  letter-spacing: 0;
+  color: var(--color-subtext);
+}
+
+#section-label span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: transform .7s, opacity .7s;
+}
+
+#nav {
+  position: fixed;
+  right: 3vw;
+  top: 50%;
+  width: 14px;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+#nav ul {
+  list-style: none;
+  padding: 0;
+}
+
+/* 縦線 */
+#nav::before {
+  content: "";
+  position: absolute;
+  right: 6px;
+  top: 19px;
+  bottom: 19px;
+  width: 1px;
+  background: var(--color-line);
+}
+
+/* 高さは script.js の NAV_ITEM_HEIGHT と合わせる */
+#nav li {
+  position: relative;
+  height: 38px;
+}
+
+#nav button {
+  position: absolute;
+  inset: 0;
+}
+
+#nav button::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px;
+  border-radius: 50%;
+  background: var(--color-subtext);
+  opacity: .5;
+  transition: .3s;
+}
+
+#nav li:hover button::before {
+  background: var(--color-accent);
+  opacity: 1;
+  transform: scale(1.8);
+}
+
+.nav-label {
+  position: absolute;
+  right: 26px;
+  top: 50%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  font: 400 18px var(--font-serif);
+  letter-spacing: 0;
+  color: var(--color-accent-text);
+  opacity: 0;
+  transition: opacity .4s;
+  pointer-events: none;
+}
+
+#nav li.is-current .nav-label,
+#nav li:hover .nav-label {
+  opacity: 1;
+}
+
+.nav-marker {
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 14px;
+  height: 38px;
+  pointer-events: none;
+  transition: transform .8s var(--ease-section);
+}
+
+/* どのセクションからでも押せるお問い合わせボタン（右上） */
+/* ナビのラベルと同じ大きさのセリフ体。普段は控えめなグレー、触れたときだけオレンジ */
+#contact-cta {
+  position: fixed;
+  top: max(28px, env(safe-area-inset-top));
+  right: 3vw;
+  z-index: 6;
+  padding: 2px 0;
+  font: 400 18px/1.7 var(--font-serif);
+  letter-spacing: 0;
+  color: var(--color-subtext);
+  transition: color .3s, opacity .4s;
+}
+
+#contact-cta::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 3px;
+  height: 1px;
+  background: var(--color-border);
+  transition: background .3s;
+}
+
+/* 見た目はそのまま、押せる範囲だけ広げる（スマホで押しやすく） */
+#contact-cta::before {
+  content: "";
+  position: absolute;
+  inset: -10px -12px;
+}
+
+.cta-arrow {
+  width: 14px;
+  height: 9px;
+  margin-left: 8px;
+  vertical-align: 2px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform .3s;
+}
+
+#contact-cta:hover {
+  color: var(--color-accent-text);
+}
+
+#contact-cta:hover::after {
+  background: var(--color-accent);
+}
+
+#contact-cta:hover .cta-arrow {
+  transform: translateX(3px);
+}
+
+#contact-cta.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-marker::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px;
+  border-radius: 50%;
+  background: var(--color-accent);
+}
+
+/* ---- common ---- */
+
+.heading {
+  font: 500 20px/1.6 var(--font-sans);
+  font-feature-settings: "palt";
+  letter-spacing: .02em;
+}
+
+.small-text {
+  font-size: 12px;
+  color: var(--color-subtext);
+  margin-top: 12px;
+  line-height: 1.8;
+}
+
+/* ---- TOP ---- */
+
+/* 下余白の中に収め、縦線は画面の下端まで */
+.scroll-hint {
+  --line-h: clamp(12px, calc(var(--pad-bottom) - 56px), 48px); /* 低い画面でも下余白からはみ出さない長さ */
+  position: absolute;
+  left: var(--pad-left);
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.scroll-hint span {
+  writing-mode: vertical-rl;
+  font: 400 13px/1 var(--font-serif);
+  letter-spacing: .1em;
+  color: var(--color-subtext);
+}
+
+/* 薄い線 */
+.scroll-hint::after {
+  content: "";
+  width: 1px;
+  height: var(--line-h);
+  background: var(--color-subtext);
+  opacity: .3;
+}
+
+/* 薄い線の上端から下端へ流れる短い線（長さは線の1/3） */
+.scroll-hint::before {
+  content: "";
+  position: absolute;
+  left: calc(50% - .5px);
+  bottom: calc(var(--line-h) * 2 / 3);
+  z-index: 1; /* 薄い線（::after）より手前に */
+  width: 1px;
+  height: calc(var(--line-h) / 3);
+  background: var(--color-text); /* 薄い線と同じ色だと流れが見えない */
+  animation: scroll-hint-flow 2.2s ease-in-out infinite;
+}
+
+@keyframes scroll-hint-flow {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+
+  30%,
+  70% {
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(calc(var(--line-h) * 2 / 3));
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-hint::before {
+    animation: none;
+    opacity: 0;
+  }
+}
+
+.hero-name-wrap {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.hero-name {
+  font: 400 clamp(40px, 7vw, 150px)/1 var(--font-serif);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
+
+/* 左端を基準線に揃える */
+.hero-text {
+  position: absolute;
+  left: var(--axis);
+  right: var(--pad-right);
+  bottom: var(--pad-bottom);
+}
+
+.hero-catch {
+  font: 500 clamp(18px, 1.8vw, 26px)/1.6 var(--font-sans);
+  font-feature-settings: "palt";
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.hero-lead {
+  font-size: 16px;
+  color: var(--color-subtext);
+  margin-top: 14px;
+}
+
+/* ---- PROFILE ---- */
+
+/* 下寄せ、左端は基準線（.section-scroll の左パディング分を差し引く） */
+.section-profile .section-inner {
+  margin: auto 0 0 calc(var(--axis) - var(--pad-left));
+}
+
+.profile-text {
+  max-width: 30em;
+  font-size: clamp(16px, 1.25vw, 19px);
+  line-height: 2.2;
+}
+
+.profile-text p + p {
+  margin-top: .9em;
+}
+
+/* ---- WORKS ---- */
+
+/* 幅は文章に合わせる（入りきらない画面でだけ折り返す） */
+.works-notice {
+  width: fit-content;
+  margin-bottom: 40px;
+  padding: 10px 16px;
+  border-left: 3px solid var(--color-accent);
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.8;
+  color: var(--color-subtext);
+}
+
+.works-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 28px 24px;
+  margin: 20px 0 64px;
+}
+
+/* グリッド下の余白に食い込ませる */
+.works-note {
+  color: var(--color-subtext);
+  font-size: 13px;
+  margin: -40px 0 64px;
+}
+
+/* button は中身を縦中央に置くので、行の高さに伸ばさず上詰めにする */
+.card {
+  display: block;
+  align-self: start;
+  text-align: left;
+}
+
+.card-title {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.card-result {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-subtext);
+}
+
+/* カードとモーダルで共通。スクリーンショット（16:10）が見切れないよう同じ比率にする */
+.thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  background: var(--color-placeholder);
+  border: 1px solid var(--color-border); /* 背景と同じ色の画像でも境目が分かるように */
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  color: var(--color-subtext);
+  font: 400 14px var(--font-serif);
+}
+
+.thumb-image {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  transition: transform .6s;
+}
+
+.card:hover .thumb-image {
+  transform: scale(1.05);
+}
+
+.image-badge {
+  position: absolute;
+  right: 8px;
+  bottom: 6px;
+  z-index: 2;
+  padding: 0 6px;
+  font: 400 10px/1.6 var(--font-sans);
+  font-feature-settings: "palt";
+  font-style: normal;
+  color: var(--color-subtext);
+  background: rgba(245, 245, 245, .88);
+}
+
+/* ---- STRENGTH ---- */
+
+/* 上から並べる */
+.strength-list {
+  max-width: 880px;
+}
+
+/* 見出し｜説明 */
+.strength-list > div {
+  display: grid;
+  grid-template-columns: 12em 1fr;
+  align-items: baseline;
+  padding: 28px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.strength-list > div:last-child {
+  border-bottom: 1px solid var(--color-border);
+}
+
+.strength-list p {
+  padding-left: 2em;
+  border-left: 1px solid var(--color-border);
+  color: var(--color-subtext);
+  font-size: 15px;
+}
+
+/* ---- SKILL ---- */
+
+/* 右列の左端を基準線に揃える */
+.skill-list {
+  display: grid;
+  grid-template-columns: calc(var(--axis) - var(--pad-left)) 1fr;
+  gap: 18px 0;
+}
+
+.skill-list > div:nth-child(odd) {
+  padding-right: 2em;
+}
+
+.skill-list b {
+  display: block;
+  font-weight: 500;
+}
+
+.skill-list span {
+  color: var(--color-subtext);
+  font-size: 14px;
+}
+
+.code-heading {
+  margin-top: 40px;
+}
+
+.code-group {
+  margin-top: 14px;
+}
+
+.code-label {
+  display: block;
+  font-size: 13px;
+  color: var(--color-subtext);
+}
+
+.code-list {
+  margin-top: 2px;
+}
+
+.ai-note {
+  margin-top: 32px;
+  color: var(--color-subtext);
+  font-size: 14px;
+}
+
+/* ---- CONTACT ---- */
+
+form {
+  display: grid;
+  gap: 20px;
+  max-width: 560px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field-label {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.required {
+  margin-left: .8em;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--color-accent-text);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  color: var(--color-text);
+  border-radius: 0;
+}
+
+::placeholder {
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+select {
+  appearance: none;
+  padding-right: 40px;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%231A202C' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 16px center / 12px 8px;
+  cursor: pointer;
+}
+
+/* 未選択（「選択してください」）のときは薄く */
+select:invalid {
+  color: var(--color-muted);
+}
+
+select option {
+  color: var(--color-text);
+}
+
+/* 開いたときのリスト。対応ブラウザ（Chrome / Edge 135〜）のみ、それ以外は標準のまま */
+@supports (appearance: base-select) {
+  select,
+  ::picker(select) {
+    appearance: base-select;
+  }
+
+  /* 矢印は背景のSVGを使う */
+  select::picker-icon {
+    display: none;
+  }
+
+  ::picker(select) {
+    width: anchor-size(width);
+    margin-top: 4px;
+    padding: 6px 0;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    box-shadow: 0 8px 24px rgba(26, 32, 44, .08);
+  }
+
+  select option {
+    padding: 10px 14px;
+  }
+
+  select option::checkmark {
+    display: none;
+  }
+
+  select option:hover,
+  select option:focus-visible {
+    background: var(--color-bg);
+    outline: 0;
+  }
+
+  select option:checked {
+    color: var(--color-accent-text);
+    font-weight: 500;
+  }
+
+  /* 「選択してください」はリストに出さない */
+  select option[value=""] {
+    display: none;
+  }
+}
+
+textarea {
+  min-height: 130px;
+  resize: vertical;
+}
+
+/* 吹き出しの代わりに欄の下に出すエラー */
+.field-error {
+  font-size: 13px;
+  color: var(--color-error);
+}
+
+.field-error:empty {
+  display: none;
+}
+
+[aria-invalid="true"] {
+  border-color: var(--color-error);
+}
+
+.submit-button {
+  padding: 12px;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent-text);
+  font-weight: 500;
+  transition: background .3s, color .3s;
+}
+
+.submit-button:hover {
+  background: var(--color-accent);
+  color: #fff;
+}
+
+.submit-button:disabled {
+  opacity: .5;
+  pointer-events: none;
+}
+
+/* 送信完了のポップアップ */
+.modal-box.modal-thanks {
+  width: min(480px, 100%);
+  padding: 48px 32px 36px;
+  text-align: center;
+}
+
+.modal-thanks h3 {
+  justify-content: center;
+}
+
+.modal-thanks p {
+  margin-top: 16px;
+  color: var(--color-subtext);
+}
+
+.thanks-close {
+  min-width: 160px;
+  margin-top: 32px;
+}
+
+/* ---- modal ---- */
+
+#modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 4vh 4vw;
+  background: rgba(26, 32, 44, .45);
+}
+
+#modal[hidden] {
+  display: none;
+}
+
+.modal-box {
+  position: relative;
+  --arrow-col: 36px; /* スライダーの矢印の列 */
+  width: min(820px, 100%);
+  max-height: 92vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 28px;
+  background: var(--color-bg);
+}
+
+.modal-close {
+  position: absolute;
+  right: 12px;
+  top: 6px;
+  z-index: 3;
+  font-size: 30px;
+  line-height: 1.4;
+}
+
+/* 画像が複数のときは、矢印を画像に重ねず左右の列に置く */
+.slider:has(.slider-arrow) {
+  display: grid;
+  grid-template-columns: var(--arrow-col) 1fr var(--arrow-col);
+  align-items: center;
+  gap: 4px;
+}
+
+.slider .thumb {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+.slider-arrow {
+  grid-row: 1;
+  height: 44px;
+  font-size: 34px;
+}
+
+.slider-arrow.prev {
+  grid-column: 1;
+}
+
+.slider-arrow.next {
+  grid-column: 3;
+}
+
+/* サムネイルも画像の左端に揃える */
+.slider:has(.slider-arrow) + .thumbnails {
+  padding-left: calc(var(--arrow-col) + 4px);
+}
+
+.thumbnails {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0 24px;
+}
+
+.thumbnails button {
+  width: 56px;
+  aspect-ratio: 4 / 3;
+  background: var(--color-placeholder) center / cover;
+  opacity: .5;
+}
+
+.thumbnails .is-active {
+  opacity: 1;
+  box-shadow: 0 0 0 2px var(--color-accent);
+}
+
+/* 画像1枚のとき用 */
+.thumbnails-spacer {
+  height: 24px;
+}
+
+.modal-box h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font: 500 22px/1.5 var(--font-sans);
+  font-feature-settings: "palt";
+  letter-spacing: .02em;
+}
+
+.modal-box h4 {
+  margin: 22px 0 4px;
+  font-size: 14px;
+  color: var(--color-subtext);
+}
+
+.modal-box p {
+  font-size: 15px;
+}
+
+/* 詳細の箇条書き（kintoneデモ） */
+.detail-list {
+  padding-left: 1.2em;
+  font-size: 15px;
+}
+
+.detail-list li + li {
+  margin-top: .3em;
+}
+
+.detail-list li::marker {
+  color: var(--color-accent);
+}
+
+/* 使った技術のタグ */
+.tech-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  list-style: none;
+}
+
+.tech-tags li {
+  padding: 2px 10px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--color-subtext);
+}
+
+/* 独立したリンク（GitHub など） */
+.modal-links {
+  margin-top: 28px;
+}
+
+.modal-links a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-text);
+  transition: color .3s;
+}
+
+.modal-links a + a {
+  margin-left: 24px;
+}
+
+.modal-links a:hover {
+  color: var(--color-accent-text);
+}
+
+/* ---- responsive ---- */
+
+/* 基準線から右端までに1行で収まらなくなる幅 */
+@media (max-width: 1000px) {
+  .hero-catch span {
+    display: block;
+  }
+}
+
+@media (max-width: 900px) {
+  .works-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  /* 画像を小さくしすぎないよう、余白と矢印の列を狭く */
+  .modal-box {
+    --arrow-col: 26px;
+    padding: 52px 16px 20px; /* 上は「×」と画像が重ならない分あける */
+  }
+
+  .slider-arrow {
+    font-size: 28px;
+  }
+
+  .thumbnails button {
+    width: 44px;
+  }
+
+  :root {
+    --pad-top: 12vh;
+    --pad-right: 11vw;
+    --pad-bottom: 10vh;
+    --pad-left: 6vw;
+  }
+
+  .works-grid,
+  .skill-list {
+    grid-template-columns: 1fr;
+  }
+
+  .nav-label {
+    display: none;
+  }
+
+  .scroll-hint {
+    display: none;
+  }
+
+  .skill-list > div:nth-child(odd) {
+    padding-right: 0;
+  }
+
+  /* 縦に積む */
+  .strength-list > div {
+    grid-template-columns: 1fr;
+  }
+
+  .strength-list p {
+    margin-top: 8px;
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  /* 基準線は使わず左寄せ */
+  .section-profile .section-inner {
+    margin-left: 0;
+  }
+
+  .hero-text {
+    left: var(--pad-left);
+  }
+
+  .hero-catch {
+    font-size: 6vw;
+  }
+
+  .hero-lead {
+    font-size: 3.7vw;
+  }
+}

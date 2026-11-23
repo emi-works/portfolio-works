@@ -66,11 +66,9 @@
 </head>
 <body>
   <!-- 背景（紙の質感・セクション名の大きな文字・図形）。動きは background.js -->
-  <div class="bg-layer" id="bg-grain"></div>
-  <div class="bg-layer" id="bg-word"></div>
-  <div class="bg-layer" id="bg-shapes"><svg></svg></div>
-
-  <div id="section-label"></div>
+  <div class="bg-layer" id="bg-grain" aria-hidden="true"></div>
+  <div class="bg-layer" id="bg-word" aria-hidden="true"></div>
+  <div class="bg-layer" id="bg-shapes" aria-hidden="true"><svg></svg></div>
 
   <nav id="nav" aria-label="セクション">
     <ul></ul>
@@ -80,7 +78,7 @@
   <!-- 中身は script.js で生成 -->
   <main id="app"></main>
 
-  <div id="modal" hidden></div>
+  <dialog id="modal"></dialog>
 
   <script src="content.js"></script>
   <script src="background.js"></script>

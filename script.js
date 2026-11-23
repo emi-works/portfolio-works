@@ -24,8 +24,14 @@
 
   const DETAIL_LABELS = ['課題', 'やったこと', '工夫'];
 
-  const thumbImage = (url) =>
-    url ? `<span class="thumb-image" style="background-image:url('${escapeHtml(url)}')"></span>` : 'Coming soon';
+  // 作品画像。表示枠（16:10）に object-fit: cover で合わせる。画像がなければ Coming soon
+  const thumbImage = (url, alt) =>
+    url
+      ? `<img class="thumb-image" src="${escapeHtml(url)}" alt="${escapeHtml(alt)}" loading="lazy" decoding="async" width="1600" height="1000">`
+      : 'Coming soon';
+
+  // 画像の代わりの文：スクリーンショットは「〜の画面」、イラストは「〜のイメージイラスト」
+  const imageAlt = (card, isIllustration) => `${card.title}の${isIllustration ? 'イメージイラスト' : '画面'}`;
 
   const imageBadge = (show) => (show ? '<em class="image-badge">イメージ</em>' : '');
 
@@ -40,12 +46,14 @@
   const sections = [];
   const workCards = [];
 
-  // fullScreen: スクロール枠で包まない（TOP用）
+  // fullScreen: スクロール枠で包まない（TOP用。TOP は h1 が見出しを兼ねるので h2 は置かない）
+  // TOP 以外は、左上に見えるセクション名をそのまま h2 にする（入れ替わりの動きは CSS）
   const addSection = (name, html, fullScreen = false) => {
     const el = createElement('section', `section section-${name.toLowerCase()}`);
     el.innerHTML = fullScreen
       ? html
-      : `<div class="section-scroll"><div class="section-inner">${html}</div></div>`;
+      : `<div class="section-title-wrap"><h2 class="section-title"><span>${escapeHtml(name)}</span></h2></div>` +
+        `<div class="section-scroll"><div class="section-inner">${html}</div></div>`;
 
     // 表示アニメーションの遅延用
     el.querySelectorAll('.reveal').forEach((item, i) => item.style.setProperty('--i', i));
@@ -88,7 +96,7 @@
           const cardNote = card.cardNote || card.result; // タイトル下の一文（なければ成果）
           return `
           <button class="card reveal" data-index="${index}">
-            <span class="thumb">${thumbImage(card.cardImage || card.images[0])}${imageBadge(group.isIllustration)}</span>
+            <span class="thumb">${thumbImage(card.cardImage || card.images[0], imageAlt(card, group.isIllustration))}${imageBadge(group.isIllustration)}</span>
             <span class="card-title">${escapeHtml(card.title)}</span>
             ${cardNote ? `<span class="card-result">${escapeHtml(cardNote)}</span>` : ''}
           </button>`;
@@ -155,12 +163,9 @@
 
   const navList = $('#nav ul');
   const navMarker = $('.nav-marker');
-  const sectionLabel = $('#section-label');
   const modal = $('#modal');
 
-  const NAV_ITEM_HEIGHT = 38; // #nav li の高さと合わせる
   const TRANSITION_LOCK_MS = 1000;
-  const LABEL_ANIMATION_MS = 700;
 
   let currentIndex = -1;
   let isLocked = false;
@@ -173,34 +178,12 @@
   });
   const navItems = [...navList.children];
 
-  // 左上のセクション名を入れ替える（direction: 1 = 下へ, -1 = 上へ）
-  function updateSectionLabel(text, direction) {
-    const oldLabel = sectionLabel.querySelector('span');
-    if (oldLabel) {
-      oldLabel.style.transform = `translateY(${direction > 0 ? -100 : 100}%)`;
-      oldLabel.style.opacity = 0;
-      setTimeout(() => oldLabel.remove(), LABEL_ANIMATION_MS);
-    }
-    if (!text) return;
-
-    const newLabel = createElement('span');
-    newLabel.textContent = text;
-    newLabel.style.transform = `translateY(${direction > 0 ? 100 : -100}%)`;
-    newLabel.style.opacity = 0;
-    sectionLabel.appendChild(newLabel);
-
-    // 初期位置を描画させてから動かす
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        newLabel.style.transform = 'none';
-        newLabel.style.opacity = 1;
-      })
-    );
-  }
-
   function goTo(index) {
     index = Math.max(0, Math.min(sections.length - 1, index));
     if (index === currentIndex || isLocked) return;
+
+    // 現在地マーカーの移動先。DOM を書き換える前に読み、レイアウトの再計算を増やさない
+    const markerTop = navItems[index].offsetTop;
 
     // アニメーション中の連続操作を防ぐ
     isLocked = true;
@@ -220,11 +203,8 @@
     const scroller = sections[index].el.querySelector('.section-scroll');
     if (scroller) scroller.scrollTop = 0;
 
-    navMarker.style.transform = `translateY(${index * NAV_ITEM_HEIGHT}px)`;
+    navMarker.style.transform = `translateY(${markerTop}px)`;
     navItems.forEach((li, i) => li.classList.toggle('is-current', i === index));
-
-    // TOP ではラベルを出さない
-    updateSectionLabel(index ? sections[index].name : '', direction);
 
     // 背景（background.js）に切り替えを知らせる
     dispatchEvent(new CustomEvent('sectionchange', { detail: { index, name: sections[index].name, direction } }));
@@ -233,6 +213,11 @@
   }
 
   goTo(0);
+
+  // 低い画面ではナビの間隔が変わるので、マーカーの位置を合わせ直す
+  addEventListener('resize', () => {
+    navMarker.style.transform = `translateY(${navItems[currentIndex].offsetTop}px)`;
+  });
 
   // セクション内にまだスクロールの余地があるか
   const canScrollInside = (scroller, deltaY) => {
@@ -263,7 +248,7 @@
   addEventListener(
     'wheel',
     (e) => {
-      if (!modal.hidden) return;
+      if (modal.open) return;
 
       const now = Date.now();
       const abs = Math.abs(e.deltaY);
@@ -326,7 +311,7 @@
   );
 
   addEventListener('touchend', (e) => {
-    if (!modal.hidden) return;
+    if (modal.open) return;
 
     const deltaY = touchStartY - e.changedTouches[0].clientY;
     if (Math.abs(deltaY) < SWIPE_THRESHOLD) return;
@@ -358,22 +343,25 @@
         '<button class="slider-arrow next" aria-label="次へ">›</button>'
       : '';
 
+    // サムネイルの画像は飾り（alt=""）。説明はボタンの aria-label で行う
     const thumbnailsHtml = hasMultipleImages
       ? `<div class="thumbnails">${card.images
           .map((src, i) => {
             const activeClass = i === imageIndex ? 'is-active' : '';
-            const bgStyle = src ? ` style="background-image:url('${escapeHtml(src)}')"` : '';
-            return `<button class="${activeClass}" data-index="${i}" aria-label="${i + 1}枚目"${bgStyle}></button>`;
+            const img = src ? `<img src="${escapeHtml(src)}" alt="" loading="lazy" decoding="async" width="1600" height="1000">` : '';
+            return `<button class="${activeClass}" data-index="${i}" aria-label="${i + 1}枚目の画像を表示">${img}</button>`;
           })
           .join('')}</div>`
       : '<div class="thumbnails-spacer"></div>';
+
+    const mainAlt = imageAlt(card, card.isIllustration) + (hasMultipleImages ? `（${imageIndex + 1}枚目／全${card.images.length}枚）` : '');
 
     const titleHtml = card.url
       ? `<a ${linkAttrs}>${escapeHtml(card.name)}</a><a ${linkAttrs} aria-label="開く">${EXTERNAL_LINK_ICON}</a>`
       : escapeHtml(card.name);
 
-    // 空の項目は見出しごと出さない
-    const block = (label, text) => (text ? `<h4>${label}</h4><p>${escapeHtml(text)}</p>` : '');
+    // 空の項目は見出しごと出さない（ポップアップ内の小見出しは h3）
+    const block = (label, text) => (text ? `<h3>${label}</h3><p>${escapeHtml(text)}</p>` : '');
     const listOrText = (value) =>
       Array.isArray(value)
         ? `<ul class="detail-list">${value.map((item) => `<li>${escapeHtml(item)}</li>`).join('')}</ul>`
@@ -383,7 +371,7 @@
     // 詳細：見出しごとに分ける形（kintoneデモ）と、「詳細」の下にまとめる形
     const detailsHtml =
       card.detailStyle === 'sections'
-        ? card.detailLabels.map((label, i) => (hasValue(card.details[i]) ? `<h4>${label}</h4>${listOrText(card.details[i])}` : '')).join('')
+        ? card.detailLabels.map((label, i) => (hasValue(card.details[i]) ? `<h3>${label}</h3>${listOrText(card.details[i])}` : '')).join('')
         : card.detailLabels.map((label, i) =>
             card.details[i] ? `<p><b>${label}</b>　${escapeHtml(card.details[i])}</p>` : ''
           ).join('');
@@ -393,7 +381,7 @@
       .map((t) => t.trim())
       .filter(Boolean);
     const techHtml = techTags.length
-      ? `<h4>使った技術</h4><ul class="tech-tags">${techTags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`
+      ? `<h3>使った技術</h3><ul class="tech-tags">${techTags.map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`
       : '';
 
     // 独立したリンク（GitHub など）
@@ -403,21 +391,23 @@
           .join('')}</p>`
       : '';
 
+    // ポップアップのタイトルは h2（dialog の名前にも使う）
+    modal.setAttribute('aria-labelledby', 'modal-title');
     modal.innerHTML = `
-      <div class="modal-box" role="dialog" aria-modal="true" aria-label="${escapeHtml(card.title)}">
+      <div class="modal-box">
         <button class="modal-close" aria-label="閉じる">×</button>
         <div class="slider">
-          <div class="thumb">${thumbImage(card.images[imageIndex])}${imageBadge(card.isIllustration)}</div>
+          <div class="thumb">${thumbImage(card.images[imageIndex], mainAlt)}${imageBadge(card.isIllustration)}</div>
           ${arrowsHtml}
         </div>
         ${thumbnailsHtml}
-        <h3>${titleHtml}</h3>
+        <h2 id="modal-title">${titleHtml}</h2>
         ${block('概要', card.summary)}
         ${block('成果', card.result)}
         ${
           card.detailStyle === 'sections'
             ? `${detailsHtml}${techHtml}`
-            : `${techHtml}${detailsHtml ? `<h4>詳細</h4>${detailsHtml}` : ''}`
+            : `${techHtml}${detailsHtml ? `<h3>詳細</h3>${detailsHtml}` : ''}`
         }
         ${linksHtml}
       </div>`;
@@ -425,20 +415,29 @@
     if (focusSelector) modal.querySelector(focusSelector)?.focus();
   }
 
+  // <dialog> を showModal() で開く。外側は自動で操作できなくなる（Tab の周回は keydown で処理）
+  const showDialog = (focusSelector) => {
+    if (!modal.open) modal.showModal();
+    modal.querySelector(focusSelector).focus();
+  };
+
   const openModal = (cardButton) => {
     lastFocused = cardButton;
     activeCard = workCards[Number(cardButton.dataset.index)];
     imageIndex = 0;
     renderModal();
-    modal.hidden = false;
-    modal.querySelector('.modal-close').focus();
+    showDialog('.modal-close');
     track('work_open', { work_title: activeCard.title });
   };
 
   const closeModal = () => {
-    modal.hidden = true;
-    if (lastFocused) lastFocused.focus();
+    if (modal.open) modal.close();
   };
+
+  // Esc（ブラウザ標準の閉じ方）でも、×や背景クリックでも、閉じたら元の場所にフォーカスを戻す
+  modal.addEventListener('close', () => {
+    if (lastFocused) lastFocused.focus();
+  });
 
   // 端まで行ったらループ
   const showNextImage = (step) => {
@@ -471,7 +470,21 @@
   // ---- keyboard ----
 
   addEventListener('keydown', (e) => {
-    if (!modal.hidden) {
+    if (modal.open) {
+      // Tab はポップアップの中だけで回す（最後の次は最初へ、最初の前は最後へ。ブラウザのUIにも抜けない）
+      if (e.key === 'Tab') {
+        const focusables = [...modal.querySelectorAll('a[href], button:not([disabled]), input, select, textarea, [tabindex]:not([tabindex="-1"])')];
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && (document.activeElement === first || !modal.contains(document.activeElement))) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && (document.activeElement === last || !modal.contains(document.activeElement))) {
+          e.preventDefault();
+          first.focus();
+        }
+        return;
+      }
       if (e.key === 'Escape') {
         closeModal();
       } else if (activeCard && activeCard.images.length > 1 && (e.key === 'ArrowRight' || e.key === 'ArrowLeft')) {
